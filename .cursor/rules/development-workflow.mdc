@@ -76,12 +76,8 @@ gh pr create \
 uv はプロジェクトの設定を自動的に認識し、必要な環境を構築します。
 
 ```bash
-# 初回セットアップ（Python仮想環境の構築）
+# 初回セットアップ
 uv sync
-
-# 仮想環境を有効化
-source .venv/bin/activate  # macOS/Linux
-.venv\Scripts\activate     # Windows
 
 # パッケージの追加（pyproject.toml に自動追加）
 uv add fastapi
@@ -102,7 +98,7 @@ uv run --frozen pytest tests/ -v
 cd api && uv run uvicorn main:app --reload
 ```
 
-**注意**：プロジェクトに pyproject.toml があれば、Python のインストールも含めてすべて自動化されます。ローカルPython環境での高速開発が可能です。
+**注意**: uv は Python のインストールから仮想環境の管理まですべて自動化します。
 
 ### 環境管理緊急プロトコル（必須遵守）
 
@@ -146,17 +142,20 @@ uv run --frozen pytest tests/ -v  # 実際のテスト実行
 
 ```
 project/
-├── pyproject.toml          # 開発・テスト環境（統合）
+├── pyproject.toml          # 統合依存関係管理
 │   ├── optional-dependencies.dev: pytest, httpx, ruff, pyright
-│   ├── optional-dependencies.api: fastapi, uvicorn, pydantic
+│   ├── optional-dependencies.api: fastapi, uvicorn, pydantic, gunicorn
 │   └── optional-dependencies.ui: streamlit, pydantic
-├── api/pyproject.toml      # 本番デプロイ専用（最小限）
-│   └── dependencies: fastapi, uvicorn, pydantic のみ
-└── ui/pyproject.toml       # 本番デプロイ専用（最小限）
-    └── dependencies: streamlit, pydantic のみ
+├── api/
+│   ├── main.py             # FastAPIアプリケーション
+│   ├── requirements.txt    # デプロイ時生成
+│   └── Procfile           # デプロイ時生成
+└── ui/
+    ├── main.py             # Streamlitアプリケーション
+    └── requirements.txt    # 必要に応じて生成
 ```
 
-**重要**: httpxはFastAPIテスト用のため、devグループに配置（UIの本番環境では不要）
+**重要**: デプロイ時は`requirements.txt`を生成し、個別のpyproject.tomlは使用しません。
 
 ## TDD実践の具体的フロー
 
@@ -256,9 +255,9 @@ git commit -m "refactor: extract validation logic to separate function"
    uv pip compile pyproject.toml --extra api -o api/requirements.txt
    ```
 
-2. **インポートパスを相対インポートに統一**
-   - ❌ `from models import ProductModel`
-   - ✅ `from .models import ProductModel`
+2. **インポートパスを絶対インポートに統一**
+   - ✅ `from models import ProductModel`
+   - ❌ `from .models import ProductModel`
 
 ### MCPデプロイコマンド
 
