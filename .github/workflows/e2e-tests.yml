@@ -1,0 +1,42 @@
+name: E2E Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  e2e-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+      
+      - name: Add uv to PATH
+        run: echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: uv sync --all-extras
+
+      - name: Install Playwright browsers
+        run: uv run playwright install --with-deps
+
+      - name: Start API server
+        run: uv run uvicorn api.main:app --host 0.0.0.0 --port 8080 &
+
+      - name: Start UI server
+        run: |
+          uv run streamlit run ui/main.py --server.port 8501 --server.headless true &
+          sleep 10 # Wait for servers to be ready
+
+      - name: Run E2E tests
+        run: uv run pytest tests/ui/test_e2e_product_journey.py 

@@ -2,7 +2,7 @@ import httpx
 import streamlit as st
 
 # APIのベースURL
-API_BASE_URL = "http://localhost:8000"
+API_BASE_URL = "http://localhost:8080"
 
 st.title("商品管理アプリ")
 
