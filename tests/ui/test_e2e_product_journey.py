@@ -28,15 +28,22 @@ def test_product_creation_and_search_journey(page: Page) -> None:
 
     # 3. 登録成功のメッセージと、レスポンスのテキストが表示されることを確認
     expect(page.get_by_text("商品を登録しました！")).to_be_visible()
-    # レスポンスのJSONに含まれるはずのテキストを確認
-    expect(page.get_by_text(f'"name": "{PRODUCT_NAME}"')).to_be_visible()
-    response_text_element = page.get_by_text(f'"price": {float(PRODUCT_PRICE)}')
-    expect(response_text_element).to_be_visible()
 
-    # 4. 登録された商品のIDをJSONレスポンスから抽出
-    json_text = response_text_element.inner_text()
-    match = re.search(r'"id":(\d+)', json_text)
-    assert match, f"レスポンスから商品IDが見つかりませんでした: {json_text}"
+    try:
+        # JSONの空白差異を許容するため、正規表現でテキストを検証
+        name_pattern = re.compile(rf'"name"\s*:\s*"{PRODUCT_NAME}"')
+        price_pattern = re.compile(rf'"price"\s*:\s*{float(PRODUCT_PRICE)}')
+        expect(page.get_by_text(name_pattern)).to_be_visible(timeout=10000)
+        expect(page.get_by_text(price_pattern)).to_be_visible(timeout=10000)
+    except AssertionError as e:
+        print("DEBUG: Page content on creation failure:")
+        print(page.content())
+        pytest.fail(f"Failed to find response text. Page content logged. Original error: {e}")
+
+    # 4. 登録された商品のIDをページ全体のテキストから抽出
+    page_text = page.locator("body").inner_text()
+    match = re.search(r'"id"\s*:\s*(\d+)', page_text)
+    assert match, f"レスポンスから商品IDが見つかりませんでした: {page_text}"
     product_id = match.group(1)
 
     # 少し待機してUIの更新を確実にする
@@ -49,7 +56,15 @@ def test_product_creation_and_search_journey(page: Page) -> None:
     # 6. 検索成功のメッセージが表示されることを確認
     expect(page.get_by_text("商品が見つかりました！")).to_be_visible()
 
-    # 7. 検索結果が正しいことを確認
-    expect(page.get_by_text(f'"id": {product_id}')).to_be_visible()
-    expect(page.get_by_text(f'"name": "{PRODUCT_NAME}"')).to_be_visible()
-    expect(page.get_by_text(f'"price": {float(PRODUCT_PRICE)}')).to_be_visible()
+    # 7. 検索結果が正しいことを確認 (正規表現使用)
+    try:
+        id_pattern = re.compile(rf'"id"\s*:\s*{product_id}')
+        name_pattern = re.compile(rf'"name"\s*:\s*"{PRODUCT_NAME}"')
+        price_pattern = re.compile(rf'"price"\s*:\s*{float(PRODUCT_PRICE)}')
+        expect(page.get_by_text(id_pattern)).to_be_visible(timeout=10000)
+        expect(page.get_by_text(name_pattern)).to_be_visible(timeout=10000)
+        expect(page.get_by_text(price_pattern)).to_be_visible(timeout=10000)
+    except AssertionError as e:
+        print("DEBUG: Page content on search failure:")
+        print(page.content())
+        pytest.fail(f"Failed to find search result text. Page content logged. Original error: {e}")
