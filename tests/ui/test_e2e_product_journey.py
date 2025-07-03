@@ -26,20 +26,16 @@ def test_product_creation_and_search_journey(page: Page) -> None:
     page.get_by_label("価格").fill(PRODUCT_PRICE)
     page.get_by_role("button", name="商品を登録").click()
 
-    # 3. 登録成功のメッセージと結果が表示されることを確認
+    # 3. 登録成功のメッセージと、レスポンスのテキストが表示されることを確認
     expect(page.get_by_text("商品を登録しました！")).to_be_visible()
-    response_element = page.locator('div[data-testid="stCodeBlock"]').first
-    try:
-        # CI環境でのレンダリング遅延を考慮し、タイムアウトを10秒に延長
-        expect(response_element).to_be_visible(timeout=10000)
-    except AssertionError as e:
-        print("DEBUG: Page content on creation failure:")
-        print(page.content())
-        pytest.fail(f"Failed to find response element. Page content logged. Original error: {e}")
+    # レスポンスのJSONに含まれるはずのテキストを確認
+    expect(page.get_by_text(f'"name": "{PRODUCT_NAME}"')).to_be_visible()
+    response_text_element = page.get_by_text(f'"price": {float(PRODUCT_PRICE)}')
+    expect(response_text_element).to_be_visible()
 
     # 4. 登録された商品のIDをJSONレスポンスから抽出
-    json_text = response_element.inner_text()
-    match = re.search(r'"id":\s*(\d+)', json_text)
+    json_text = response_text_element.inner_text()
+    match = re.search(r'"id":(\d+)', json_text)
     assert match, f"レスポンスから商品IDが見つかりませんでした: {json_text}"
     product_id = match.group(1)
 
@@ -54,17 +50,6 @@ def test_product_creation_and_search_journey(page: Page) -> None:
     expect(page.get_by_text("商品が見つかりました！")).to_be_visible()
 
     # 7. 検索結果が正しいことを確認
-    search_result_element = page.locator('div[data-testid="stCodeBlock"]').last
-    try:
-        # CI環境でのレンダリング遅延を考慮し、タイムアウトを10秒に延長
-        expect(search_result_element).to_be_visible(timeout=10000)
-    except AssertionError as e:
-        print("DEBUG: Page content on search failure:")
-        print(page.content())
-        pytest.fail(
-            f"Failed to find search result element. Page content logged. Original error: {e}"
-        )
-
-    expect(search_result_element).to_contain_text(f'"id": {product_id}')
-    expect(search_result_element).to_contain_text(f'"name": "{PRODUCT_NAME}"')
-    expect(search_result_element).to_contain_text(f'"price": {float(PRODUCT_PRICE)}')
+    expect(page.get_by_text(f'"id": {product_id}')).to_be_visible()
+    expect(page.get_by_text(f'"name": "{PRODUCT_NAME}"')).to_be_visible()
+    expect(page.get_by_text(f'"price": {float(PRODUCT_PRICE)}')).to_be_visible()

@@ -30,14 +30,13 @@ if create_button:
 
             # 成功した場合
             st.success("商品を登録しました！")
-            created_item = response.json()
-            st.code(created_item, language="json")
+            st.text(response.text)
 
         except httpx.HTTPStatusError as e:
             # HTTPエラー（4xx, 5xx）の場合
             if e.response.status_code == 422:
                 st.error("入力内容に誤りがあります。")
-                st.code(e.response.json(), language="json")
+                st.text(e.response.text)
             else:
                 st.error(f"サーバーエラーが発生しました: {e.response.status_code}")
                 st.text(e.response.text)
@@ -53,8 +52,7 @@ if search_button:
             response.raise_for_status()
 
             st.success("商品が見つかりました！")
-            found_item = response.json()
-            st.code(found_item, language="json")
+            st.text(response.text)
 
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
