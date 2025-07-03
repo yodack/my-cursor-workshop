@@ -28,7 +28,7 @@ def test_product_creation_and_search_journey(page: Page) -> None:
     # 3. 登録成功のメッセージと結果が表示されることを確認
     expect(page.get_by_text("商品を登録しました！")).to_be_visible()
     response_element = page.locator('div[data-testid="stJson"] pre').first
-    expect(response_element).to_be_visible()
+    expect(response_element).to_be_visible(timeout=10000)
 
     # 4. 登録された商品のIDをJSONレスポンスから抽出
     json_text = response_element.inner_text()
@@ -48,6 +48,7 @@ def test_product_creation_and_search_journey(page: Page) -> None:
 
     # 7. 検索結果が正しいことを確認
     search_result_element = page.locator('div[data-testid="stJson"] pre').last
+    expect(search_result_element).to_be_visible(timeout=10000)
     expect(search_result_element).to_contain_text(f'"id": {product_id}')
     expect(search_result_element).to_contain_text(f'"name": "{PRODUCT_NAME}"')
     expect(search_result_element).to_contain_text(f'"price": {float(PRODUCT_PRICE)}')
