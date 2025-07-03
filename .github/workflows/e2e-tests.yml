@@ -30,13 +30,24 @@ jobs:
       - name: Install Playwright browsers
         run: uv run playwright install --with-deps
 
-      - name: Start API server
-        run: uv run uvicorn api.main:app --host 0.0.0.0 --port 8080 &
-
-      - name: Start UI server
+      - name: Start API and UI servers
         run: |
+          uv run uvicorn api.main:app --host 0.0.0.0 --port 8080 &
           uv run streamlit run ui/main.py --server.port 8501 --server.headless true &
-          sleep 10 # Wait for servers to be ready
+
+      - name: Wait for servers to be ready
+        run: |
+          echo "Waiting for servers to be ready..."
+          timeout=60
+          while ! (curl -s --fail http://localhost:8080/health > /dev/null && curl -s --fail http://localhost:8501 > /dev/null); do
+            sleep 1
+            timeout=$((timeout-1))
+            if [ $timeout -eq 0 ]; then
+              echo "Error: Servers did not become ready in time."
+              exit 1
+            fi
+          done
+          echo "Servers are ready."
 
       - name: Run E2E tests
         run: uv run pytest tests/ui/test_e2e_product_journey.py 
