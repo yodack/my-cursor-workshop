@@ -2,7 +2,7 @@ import httpx
 import streamlit as st
 
 # APIのベースURL
-API_BASE_URL = "http://localhost:8000"
+API_BASE_URL = "http://localhost:8080"
 
 st.title("商品管理アプリ")
 
@@ -30,14 +30,13 @@ if create_button:
 
             # 成功した場合
             st.success("商品を登録しました！")
-            created_item = response.json()
-            st.json(created_item)
+            st.text(response.text)
 
         except httpx.HTTPStatusError as e:
             # HTTPエラー（4xx, 5xx）の場合
             if e.response.status_code == 422:
                 st.error("入力内容に誤りがあります。")
-                st.json(e.response.json())
+                st.text(e.response.text)
             else:
                 st.error(f"サーバーエラーが発生しました: {e.response.status_code}")
                 st.text(e.response.text)
@@ -53,8 +52,7 @@ if search_button:
             response.raise_for_status()
 
             st.success("商品が見つかりました！")
-            found_item = response.json()
-            st.json(found_item)
+            st.text(response.text)
 
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
